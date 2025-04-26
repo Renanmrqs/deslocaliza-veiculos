@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deslocaliza Carros - Aluguel de Veículos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: #003366;
+            padding: 1rem;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: url('https://images.unsplash.com/photo-1503376780353-7e6692767b70') center/cover;
+            height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Filtros */
+        .filters {
+            padding: 2rem;
+            background: #f5f5f5;
+            text-align: center;
+        }
+
+        .filter-btn {
+            margin: 0.5rem;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #003366;
+            color: white;
+        }
+
+        /* Grid de Carros */
+        .cars-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .car-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+
+        .car-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .car-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .car-info {
+            padding: 1rem;
+        }
+
+        .car-price {
+            color: #003366;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background: white;
+            width: 80%;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">DESLOCALIZA CARROS</div>
+        <div class="nav-links">
+            <a href="#home">Home</a>
+            <a href="#modelos">Modelos</a>
+            <a href="#contato">Contato</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div>
+            <h1>Alugue seu carro ideal agora!</h1>
+            <button class="filter-btn">Começar Reserva</button>
+        </div>
+    </section>
+
+    <!-- Filtros -->
+    <section class="filters">
+        <button class="filter-btn" onclick="filterCars('all')">Todos</button>
+        <button class="filter-btn" onclick="filterCars('economico')">Econômicos</button>
+        <button class="filter-btn" onclick="filterCars('suv')">SUV</button>
+        <button class="filter-btn" onclick="filterCars('luxo')">Luxo</button>
+        <input type="text" id="search" placeholder="Buscar modelo..." onkeyup="searchCar()">
+    </section>
+
+    <!-- Grid de Carros -->
+    <section class="cars-grid" id="carsContainer"></section>
+
+    <!-- Modal -->
+    <div class="modal" id="carModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle"></h2>
+            <img id="modalImage" src="" alt="" class="car-image">
+            <p id="modalDetails"></p>
+            <button class="filter-btn" onclick="rentCar()">Alugar Agora</button>
+        </div>
+    </div>
+
+    <script>
+        // Banco de dados de carros
+        const cars = [
+            {
+                id: 1,
+                name: "Fiat Mobi",
+                type: "economico",
+                price: "R$ 120/dia",
+                image: "https://example.com/mobi.jpg",
+                details: "1.0 Firefly • Ar-condicionado • 4 portas"
+            },
+            {
+                id: 2,
+                name: "Jeep Renegade",
+                type: "suv",
+                price: "R$ 250/dia",
+                image: "https://example.com/renegade.jpg",
+                details: "1.8 Turbo • 4x4 • Automático"
+            },
+            {
+                id: 3,
+                name: "BMW Série 3",
+                type: "luxo",
+                price: "R$ 500/dia",
+                image: "https://example.com/bmw.jpg",
+                details: "2.0 Turbo • Full options • Teto solar"
+            }
+        ];
+
+        // Inicializar grid
+        function initCars() {
+            const container = document.getElementById('carsContainer');
+            container.innerHTML = cars.map(car => `
+                <div class="car-card" data-type="${car.type}">
+                    <img src="${car.image}" alt="${car.name}" class="car-image">
+                    <div class="car-info">
+                        <h3>${car.name}</h3>
+                        <div class="car-price">${car.price}</div>
+                        <p>${car.details}</p>
+                        <button class="filter-btn" onclick="showModal(${car.id})">Ver Detalhes</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filtros
+        function filterCars(type) {
+            const cards = document.querySelectorAll('.car-card');
+            cards.forEach(card => {
+                card.style.display = (type === 'all' || card.dataset.type === type) 
+                    ? 'block' 
+                    : 'none';
+            });
+        }
+
+        // Busca
+        function searchCar() {
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            const cards = document.querySelectorAll('.car-card');
+            
+            cards.forEach(card => {
+                const name = card.querySelector('h3').textContent.toLowerCase();
+                card.style.display = name.includes(searchTerm) ? 'block' : 'none';
+            });
+        }
+
+        // Modal
+        function showModal(id) {
+            const car = cars.find(c => c.id === id);
+            document.getElementById('modalTitle').textContent = car.name;
+            document.getElementById('modalImage').src = car.image;
+            document.getElementById('modalDetails').textContent = car.details;
+            document.getElementById('carModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('carModal').style.display = 'none';
+        }
+
+        function rentCar() {
+            alert('Reserva efetuada com sucesso!');
+            closeModal();
+        }
+
+        // Inicialização
+        window.onload = initCars;
+
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('carModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
